@@ -10,7 +10,9 @@ theme: sandstone
 library(tidyverse)
 library(here)
 library(viridis)
-source(here::here("code/lib.R"))
+#source(here::here("code/lib.R"))
+#install.packages("outliers", dependencies = TRUE)
+#library(outliers)
 theme_set(theme_bw())
 
 knitr::opts_chunk$set(tidy = FALSE,
@@ -43,6 +45,51 @@ Considerando essa variável, queremos examinar a relação entre ela e o quão h
 ## Examinando essa relação
 
 Faça uma visualização que usa os princípios de eficácia no projeto de visualizações para facilitar as comparações que você acha que são as mais importantes para entendermos esse contexto. 
+
+Para entender o contexto proposto, vamos aplicar uma análise de correlação entre as variáveis citadas.
+
+1. Comentários por países X PDI(Power Distance Index):
+```{r}
+
+dados %>% ggplot( aes(x=PDI , y=comentaram_prop)) +
+    geom_point() +
+    scale_y_continuous(name = "Proporção de Comentários")+
+    scale_x_continuous(name = "Power Distance Index(PDI)")+
+    geom_smooth(method='lm', formula= y~x, se = FALSE)
+
+```
+
+Para evitar interferência de outliers, vamos limitar o escopo da análise de correlação para valores de PDI menor ou igual a 100 e a proporção de comentários para valores inferiores a 0.4, então:
+
+```{r}
+
+dados.filter1 = dados %>% filter(PDI <=100 & comentaram_prop <=0.4)
+
+dados.filter1 %>% ggplot( aes(x=PDI , y=comentaram_prop)) +
+    geom_point() +
+    scale_y_continuous(name = "Proporção de Comentários")+
+    scale_x_continuous(name = "Power Distance Index(PDI)")+
+    geom_smooth(method='lm', formula= y~x, se = FALSE)
+
+corrPDI = dados.filter1 %>% summarise(
+    pearson = cor(PDI,comentaram_prop,method ="spearman"),
+    spearman = cor(PDI,comentaram_prop,method ="spearman"),
+    kendall = cor(PDI,comentaram_prop, method = "kendall")
+    )
+
+corrPDI
+
+
+```
+Com base nos coeficientes de correlação, podemos afirmar que há uma relação moderada inversa(negativa) entre a proporção de comentários de usuários de um país e o seu PDI, isto é, quanto menor a desigualdade social percebida em um país, maior é a proporção de comentários registrados. 
+
+coment_prop X internet
+coment_prop x usuários
+
+```{r}
+head(dados,10)
+
+```
 
 ## Outras formas de ver
 
