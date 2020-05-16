@@ -188,6 +188,10 @@ ggpairs(df, title="Correlogram")
 
 ```
 
+3.
+```{r}
+
+```
 
 ## Bônus
 
