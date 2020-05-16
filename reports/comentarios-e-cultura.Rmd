@@ -48,7 +48,7 @@ Faça uma visualização que usa os princípios de eficácia no projeto de visua
 
 Para entender o contexto proposto, vamos aplicar uma análise de correlação entre as variáveis citadas.
 
-1. Comentários por países X PDI(Power Distance Index):
+1. Comentários por país X PDI(Power Distance Index):
 ```{r}
 
 dados %>% ggplot( aes(x=PDI , y=comentaram_prop)) +
@@ -72,7 +72,7 @@ dados.filter1 %>% ggplot( aes(x=PDI , y=comentaram_prop)) +
     geom_smooth(method='lm', formula= y~x, se = FALSE)
 
 corrPDI = dados.filter1 %>% summarise(
-    pearson = cor(PDI,comentaram_prop,method ="spearman"),
+    pearson = cor(PDI,comentaram_prop,method ="pearson"),
     spearman = cor(PDI,comentaram_prop,method ="spearman"),
     kendall = cor(PDI,comentaram_prop, method = "kendall")
     )
@@ -81,15 +81,85 @@ corrPDI
 
 
 ```
+
 Com base nos coeficientes de correlação, podemos afirmar que há uma relação moderada inversa(negativa) entre a proporção de comentários de usuários de um país e o seu PDI, isto é, quanto menor a desigualdade social percebida em um país, maior é a proporção de comentários registrados. 
 
-coment_prop X internet
-coment_prop x usuários
+2.Comentários por país X Acesso a Internet
+
+Manipulando os dados disponíveis, encontramos 3 amostras que não possuem informações sobre a taxa de acesso a internet, sendo assim, vamos remove-las da análise.
 
 ```{r}
-head(dados,10)
+
+dados %>% filter(is.na(Internet))
+
+dados.filter2 = dados %>% filter(!is.na(Internet))
+
+dados.filter2 %>% ggplot( aes(x=Internet , y=comentaram_prop)) +
+    geom_point() +
+    scale_y_continuous(name = "Proporção de Comentários")+
+    scale_x_continuous(name = "Acesso a Internet")+
+    geom_smooth(method='lm', formula= y~x, se = FALSE)
 
 ```
+
+Novamente, vamos considerar amostras com uma proporção de comentários maior que 0.4 como sendo outliers, então:
+
+```{r}
+dados.filter2 = dados.filter2 %>% filter(comentaram_prop <=0.4)
+
+dados.filter2 %>% ggplot( aes(x=Internet , y=comentaram_prop)) +
+    geom_point() +
+    scale_y_continuous(name = "Proporção de Comentários")+
+    scale_x_continuous(name = "Acesso a Internet")+
+    geom_smooth(method='lm', formula= y~x, se = FALSE)
+
+corrInternet = dados.filter2 %>% summarise(
+    pearson = cor(Internet,comentaram_prop,method ="pearson"),
+    spearman = cor(Internet,comentaram_prop,method ="spearman"),
+    kendall = cor(Internet,comentaram_prop, method = "kendall")
+    )
+
+corrInternet
+
+```
+
+Com isso, podemos afirmar que a proporção de comentários por país possui uma relação moderada com a taxa de acesso de Internet, ou seja, quanto mais acessível for a internet para uma população, maior a quantidade de comentários registrados.
+
+3. Comentários por país X Quantidade de Usuários:
+```{r}
+
+
+
+dados %>% ggplot( aes(x=usuarios , y=comentaram_prop)) +
+    geom_point() +
+    scale_y_continuous(name = "Proporção de Comentários")+
+    scale_x_continuous(name = "Quantidade de Usuários")+
+    geom_smooth(method='lm', formula= y~x, se = FALSE)
+```
+
+Podemos ver claramente a presença de outliers na quantidade de usuários, sendo assim, vamos considerar amostras com uma quantidade de usuários menor que 7,5 mil usuários, e amostras com uma proporção de comentários menor que 0.4 como sendo outliers, então:
+
+```{r}
+
+dados.filter3 = dados %>% filter(comentaram_prop <=0.4 & usuarios <=7500)
+
+dados.filter3 %>% ggplot( aes(x=usuarios , y=comentaram_prop)) +
+    geom_point() +
+    scale_y_continuous(name = "Proporção de Comentários")+
+    scale_x_continuous(name = "Quantidade de Usuários")+
+    geom_smooth(method='lm', formula= y~x, se = FALSE)
+
+corrUser = dados.filter3 %>% summarise(
+    pearson = cor(usuarios,comentaram_prop,method ="pearson"),
+    spearman = cor(usuarios,comentaram_prop,method ="spearman"),
+    kendall = cor(usuarios,comentaram_prop, method = "kendall")
+    )
+
+corrUser
+
+```
+
+Como os coeficientes de correlação estão todos próximos de zero, não podemos dizer que existe uma relação entre a quantidade de usuários de um país e a proporção de comentários registrados.
 
 ## Outras formas de ver
 
