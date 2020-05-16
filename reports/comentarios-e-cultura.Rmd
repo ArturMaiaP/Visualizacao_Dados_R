@@ -11,9 +11,8 @@ library(tidyverse)
 library(here)
 library(viridis)
 library(GGally)
+library(ggfortify)
 #source(here::here("code/lib.R"))
-#install.packages("outliers", dependencies = TRUE)
-#library(outliers)
 theme_set(theme_bw())
 
 knitr::opts_chunk$set(tidy = FALSE,
@@ -163,7 +162,7 @@ Como os coeficientes de correlação estão todos próximos de zero, não podemo
 
 Em seguida, faça 5 visualizações que usem as mesmas variáveis e também pontos, mas que sejam **menos eficazes** que a que você escolheu acima. 
 
-1.Coordenada Polar: diferentes coordenadas podem confundir o leitor.
+1.Coordenada Polar: Adotar difenrentes coordenadas pode confundir o leitor
 ```{r}
 dados %>%
     ggplot(aes(
@@ -177,7 +176,7 @@ dados %>%
 ```
 
 
-2. Correlograma: Muita visualização condensada em apenas uma imagem.
+2. Correlograma: Muita informação em uma imagem
 ```{r}
 
 df = dados %>% select(comentaram_prop,Internet,PDI,usuarios) %>% filter(!is.na(Internet))
@@ -188,12 +187,45 @@ ggpairs(df, title="Correlogram")
 
 ```
 
-3.
+4. PCA (análise de componentes principais): Requer que o leitor compreenda o método PCA.
 ```{r}
 
+pca_res <- prcomp(df, scale. = TRUE)
+
+autoplot(pca_res,loadings= TRUE, loadings.label = TRUE)
+
+```
+
+4. Grid: Divide os dados em grid de acordo com categórias. Porém esta análise utiliza 4 variáveis contínuas, sendo assim, uma quinta variável categorica foi necessária. 
+```{r}
+
+dados %>%
+    ggplot(aes(
+        x = PDI,
+        y = comentaram_prop,
+        color = Internet,
+        size = log10(usuarios)
+    )) +
+    geom_point(alpha = .6) + 
+    facet_grid(site ~ ., scales = "free_y")
 ```
 
 ## Bônus
 
 Inclua o continente dos países (`six_regions`) na visualização.
+
+```{r}
+df2 = dados %>% select(comentaram_prop,Internet,PDI,usuarios,six_regions) %>%
+    filter(!is.na(Internet)) %>% filter(!is.na(six_regions))
+
+df2 %>%
+    ggplot(aes(
+        x = PDI,
+        y = comentaram_prop,
+        color = Internet,
+        size = log10(usuarios)
+    )) +
+    geom_point(alpha = .6)+
+    facet_wrap(. ~six_regions, ncol=3)
+```
 
