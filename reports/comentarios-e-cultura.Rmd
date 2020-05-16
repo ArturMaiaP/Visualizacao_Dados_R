@@ -12,6 +12,7 @@ library(here)
 library(viridis)
 library(GGally)
 library(ggfortify)
+library(plotly)
 #source(here::here("code/lib.R"))
 theme_set(theme_bw())
 
@@ -208,6 +209,29 @@ dados %>%
     )) +
     geom_point(alpha = .6) + 
     facet_grid(site ~ ., scales = "free_y")
+```
+
+5. Gráfico 3D: visualização um pouco mais complexa.
+
+```{r}
+fig <- plot_ly(x = dados$PDI, y = dados$comentaram_prop, z = dados$Internet,marker = list(color = log10(dados$usuarios), colorscale ='Blues', showscale = TRUE,size =4))
+
+fig <- fig %>% add_markers()
+fig <- fig %>% layout(scene = list(xaxis = list(title = 'PDI'),
+                                   yaxis = list(title = 'Proporção Comentarios'),
+                                   zaxis = list(title = 'Acesso a Internet')),
+                      annotations = list(
+                        x = 1.13,
+                        y = 1.05,
+                        text = 'Usuários',
+                        xref = 'paper',
+                        yref = 'paper',
+                        showarrow = FALSE
+                        ))
+
+
+fig
+
 ```
 
 ## Bônus
