@@ -10,6 +10,7 @@ theme: sandstone
 library(tidyverse)
 library(here)
 library(viridis)
+library(GGally)
 #source(here::here("code/lib.R"))
 #install.packages("outliers", dependencies = TRUE)
 #library(outliers)
@@ -46,7 +47,22 @@ Considerando essa variável, queremos examinar a relação entre ela e o quão h
 
 Faça uma visualização que usa os princípios de eficácia no projeto de visualizações para facilitar as comparações que você acha que são as mais importantes para entendermos esse contexto. 
 
-Para entender o contexto proposto, vamos aplicar uma análise de correlação entre as variáveis citadas.
+Considerando apenas uma visualição, temos:
+```{r}
+dados %>%
+    ggplot(aes(
+        x = PDI,
+        y = comentaram_prop,
+        color = Internet,
+        size = log10(usuarios)
+    )) +
+    geom_point(alpha = .6)
+```
+
+A partir da imagens acima podemos perceber que os países com mais acesso a internet (pontos mais claros) e com uma menor desigualdade social percebida (Menores valores PDI) possuem uma maior proporção de comentários registrados, enquanto países com menos acesso a internet(pontos escuros) e com maiores valores de PDI registraram uma menor proporção de comentários. Em relação aos quantidade de usuários, não é possível perceber diferenças a partir desta visualização.
+
+
+Para entender melhor as relações entre as variáveis,vamos aplicar uma análise de correlação avaliando cada caso separadamento com base na proporção de comentários.
 
 1. Comentários por país X PDI(Power Distance Index):
 ```{r}
@@ -64,12 +80,6 @@ Para evitar interferência de outliers, vamos limitar o escopo da análise de co
 ```{r}
 
 dados.filter1 = dados %>% filter(PDI <=100 & comentaram_prop <=0.4)
-
-dados.filter1 %>% ggplot( aes(x=PDI , y=comentaram_prop)) +
-    geom_point() +
-    scale_y_continuous(name = "Proporção de Comentários")+
-    scale_x_continuous(name = "Power Distance Index(PDI)")+
-    geom_smooth(method='lm', formula= y~x, se = FALSE)
 
 corrPDI = dados.filter1 %>% summarise(
     pearson = cor(PDI,comentaram_prop,method ="pearson"),
@@ -107,12 +117,6 @@ Novamente, vamos considerar amostras com uma proporção de comentários maior q
 ```{r}
 dados.filter2 = dados.filter2 %>% filter(comentaram_prop <=0.4)
 
-dados.filter2 %>% ggplot( aes(x=Internet , y=comentaram_prop)) +
-    geom_point() +
-    scale_y_continuous(name = "Proporção de Comentários")+
-    scale_x_continuous(name = "Acesso a Internet")+
-    geom_smooth(method='lm', formula= y~x, se = FALSE)
-
 corrInternet = dados.filter2 %>% summarise(
     pearson = cor(Internet,comentaram_prop,method ="pearson"),
     spearman = cor(Internet,comentaram_prop,method ="spearman"),
@@ -143,12 +147,6 @@ Podemos ver claramente a presença de outliers na quantidade de usuários, sendo
 
 dados.filter3 = dados %>% filter(comentaram_prop <=0.4 & usuarios <=7500)
 
-dados.filter3 %>% ggplot( aes(x=usuarios , y=comentaram_prop)) +
-    geom_point() +
-    scale_y_continuous(name = "Proporção de Comentários")+
-    scale_x_continuous(name = "Quantidade de Usuários")+
-    geom_smooth(method='lm', formula= y~x, se = FALSE)
-
 corrUser = dados.filter3 %>% summarise(
     pearson = cor(usuarios,comentaram_prop,method ="pearson"),
     spearman = cor(usuarios,comentaram_prop,method ="spearman"),
@@ -164,6 +162,32 @@ Como os coeficientes de correlação estão todos próximos de zero, não podemo
 ## Outras formas de ver
 
 Em seguida, faça 5 visualizações que usem as mesmas variáveis e também pontos, mas que sejam **menos eficazes** que a que você escolheu acima. 
+
+1.Coordenada Polar: diferentes coordenadas podem confundir o leitor.
+```{r}
+dados %>%
+    ggplot(aes(
+        x = PDI,
+        color = Internet,
+        y = comentaram_prop,
+        size = log10(usuarios)
+    )) +
+    geom_point() + 
+    coord_polar()
+```
+
+
+2. Correlograma: Muita visualização condensada em apenas uma imagem.
+```{r}
+
+df = dados %>% select(comentaram_prop,Internet,PDI,usuarios) %>% filter(!is.na(Internet))
+
+df = df %>% mutate(usuarios = log10(usuarios)) 
+
+ggpairs(df, title="Correlogram")
+
+```
+
 
 ## Bônus
 
