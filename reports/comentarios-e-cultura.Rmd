@@ -10,9 +10,10 @@ theme: sandstone
 library(tidyverse)
 library(here)
 library(viridis)
+library(GGally)
+library(ggfortify)
+library(plotly)
 #source(here::here("code/lib.R"))
-#install.packages("outliers", dependencies = TRUE)
-#library(outliers)
 theme_set(theme_bw())
 
 knitr::opts_chunk$set(tidy = FALSE,
@@ -46,9 +47,24 @@ Considerando essa variável, queremos examinar a relação entre ela e o quão h
 
 Faça uma visualização que usa os princípios de eficácia no projeto de visualizações para facilitar as comparações que você acha que são as mais importantes para entendermos esse contexto. 
 
-Para entender o contexto proposto, vamos aplicar uma análise de correlação entre as variáveis citadas.
+Considerando apenas uma visualição, temos:
+```{r}
+dados %>%
+    ggplot(aes(
+        x = PDI,
+        y = comentaram_prop,
+        color = Internet,
+        size = log10(usuarios)
+    )) +
+    geom_point(alpha = .6)
+```
 
-1. Comentários por países X PDI(Power Distance Index):
+A partir da imagens acima podemos perceber que os países com mais acesso a internet (pontos mais claros) e com uma menor desigualdade social percebida (Menores valores PDI) possuem uma maior proporção de comentários registrados, enquanto países com menos acesso a internet(pontos escuros) e com maiores valores de PDI registraram uma menor proporção de comentários. Em relação aos quantidade de usuários, não é possível perceber diferenças a partir desta visualização.
+
+
+Para entender melhor as relações entre as variáveis,vamos aplicar uma análise de correlação avaliando cada caso separadamento com base na proporção de comentários.
+
+1. Comentários por país X PDI(Power Distance Index):
 ```{r}
 
 dados %>% ggplot( aes(x=PDI , y=comentaram_prop)) +
@@ -65,14 +81,8 @@ Para evitar interferência de outliers, vamos limitar o escopo da análise de co
 
 dados.filter1 = dados %>% filter(PDI <=100 & comentaram_prop <=0.4)
 
-dados.filter1 %>% ggplot( aes(x=PDI , y=comentaram_prop)) +
-    geom_point() +
-    scale_y_continuous(name = "Proporção de Comentários")+
-    scale_x_continuous(name = "Power Distance Index(PDI)")+
-    geom_smooth(method='lm', formula= y~x, se = FALSE)
-
 corrPDI = dados.filter1 %>% summarise(
-    pearson = cor(PDI,comentaram_prop,method ="spearman"),
+    pearson = cor(PDI,comentaram_prop,method ="pearson"),
     spearman = cor(PDI,comentaram_prop,method ="spearman"),
     kendall = cor(PDI,comentaram_prop, method = "kendall")
     )
@@ -81,21 +91,165 @@ corrPDI
 
 
 ```
+
 Com base nos coeficientes de correlação, podemos afirmar que há uma relação moderada inversa(negativa) entre a proporção de comentários de usuários de um país e o seu PDI, isto é, quanto menor a desigualdade social percebida em um país, maior é a proporção de comentários registrados. 
 
-coment_prop X internet
-coment_prop x usuários
+2.Comentários por país X Acesso a Internet
+
+Manipulando os dados disponíveis, encontramos 3 amostras que não possuem informações sobre a taxa de acesso a internet, sendo assim, vamos remove-las da análise.
 
 ```{r}
-head(dados,10)
+
+dados %>% filter(is.na(Internet))
+
+dados.filter2 = dados %>% filter(!is.na(Internet))
+
+dados.filter2 %>% ggplot( aes(x=Internet , y=comentaram_prop)) +
+    geom_point() +
+    scale_y_continuous(name = "Proporção de Comentários")+
+    scale_x_continuous(name = "Acesso a Internet")+
+    geom_smooth(method='lm', formula= y~x, se = FALSE)
 
 ```
+
+Novamente, vamos considerar amostras com uma proporção de comentários maior que 0.4 como sendo outliers, então:
+
+```{r}
+dados.filter2 = dados.filter2 %>% filter(comentaram_prop <=0.4)
+
+corrInternet = dados.filter2 %>% summarise(
+    pearson = cor(Internet,comentaram_prop,method ="pearson"),
+    spearman = cor(Internet,comentaram_prop,method ="spearman"),
+    kendall = cor(Internet,comentaram_prop, method = "kendall")
+    )
+
+corrInternet
+
+```
+
+Com isso, podemos afirmar que a proporção de comentários por país possui uma relação moderada com a taxa de acesso de Internet, ou seja, quanto mais acessível for a internet para uma população, maior a quantidade de comentários registrados.
+
+3. Comentários por país X Quantidade de Usuários:
+```{r}
+
+
+
+dados %>% ggplot( aes(x=usuarios , y=comentaram_prop)) +
+    geom_point() +
+    scale_y_continuous(name = "Proporção de Comentários")+
+    scale_x_continuous(name = "Quantidade de Usuários")+
+    geom_smooth(method='lm', formula= y~x, se = FALSE)
+```
+
+Podemos ver claramente a presença de outliers na quantidade de usuários, sendo assim, vamos considerar amostras com uma quantidade de usuários menor que 7,5 mil usuários, e amostras com uma proporção de comentários menor que 0.4 como sendo outliers, então:
+
+```{r}
+
+dados.filter3 = dados %>% filter(comentaram_prop <=0.4 & usuarios <=7500)
+
+corrUser = dados.filter3 %>% summarise(
+    pearson = cor(usuarios,comentaram_prop,method ="pearson"),
+    spearman = cor(usuarios,comentaram_prop,method ="spearman"),
+    kendall = cor(usuarios,comentaram_prop, method = "kendall")
+    )
+
+corrUser
+
+```
+
+Como os coeficientes de correlação estão todos próximos de zero, não podemos dizer que existe uma relação entre a quantidade de usuários de um país e a proporção de comentários registrados.
 
 ## Outras formas de ver
 
 Em seguida, faça 5 visualizações que usem as mesmas variáveis e também pontos, mas que sejam **menos eficazes** que a que você escolheu acima. 
 
+1.Coordenada Polar: Adotar difenrentes coordenadas pode confundir o leitor
+```{r}
+dados %>%
+    ggplot(aes(
+        x = PDI,
+        color = Internet,
+        y = comentaram_prop,
+        size = log10(usuarios)
+    )) +
+    geom_point() + 
+    coord_polar()
+```
+
+
+2. Correlograma: Muita informação em uma imagem
+```{r}
+
+df = dados %>% select(comentaram_prop,Internet,PDI,usuarios) %>% filter(!is.na(Internet))
+
+df = df %>% mutate(usuarios = log10(usuarios)) 
+
+ggpairs(df, title="Correlogram")
+
+```
+
+4. PCA (análise de componentes principais): Requer que o leitor compreenda o método PCA.
+```{r}
+
+pca_res <- prcomp(df, scale. = TRUE)
+
+autoplot(pca_res,loadings= TRUE, loadings.label = TRUE)
+
+```
+
+4. Grid: Divide os dados em grid de acordo com categórias. Porém esta análise utiliza 4 variáveis contínuas, sendo assim, uma quinta variável categorica foi necessária. 
+```{r}
+
+dados %>%
+    ggplot(aes(
+        x = PDI,
+        y = comentaram_prop,
+        color = Internet,
+        size = log10(usuarios)
+    )) +
+    geom_point(alpha = .6) + 
+    facet_grid(site ~ ., scales = "free_y")
+```
+
+5. Gráfico 3D: visualização um pouco mais complexa.
+
+```{r}
+fig <- plot_ly(x = dados$PDI, y = dados$comentaram_prop, z = dados$Internet,marker = list(color = log10(dados$usuarios), colorscale ='Blues', showscale = TRUE,size =4))
+
+fig <- fig %>% add_markers()
+fig <- fig %>% layout(scene = list(xaxis = list(title = 'PDI'),
+                                   yaxis = list(title = 'Proporção Comentarios'),
+                                   zaxis = list(title = 'Acesso a Internet')),
+                      annotations = list(
+                        x = 1.13,
+                        y = 1.05,
+                        text = 'Usuários',
+                        xref = 'paper',
+                        yref = 'paper',
+                        showarrow = FALSE
+                        ))
+
+
+fig
+
+```
+
 ## Bônus
 
 Inclua o continente dos países (`six_regions`) na visualização.
+
+```{r}
+df2 = dados %>% select(comentaram_prop,Internet,PDI,usuarios,six_regions) %>%
+    filter(!is.na(Internet)) %>% filter(!is.na(six_regions))
+
+df2 %>%
+    ggplot(aes(
+        x = PDI,
+        y = comentaram_prop,
+        color = Internet,
+        size = log10(usuarios)
+    )) +
+    geom_point(alpha = .6)+
+    facet_wrap(. ~six_regions, ncol=3)
+```
 
